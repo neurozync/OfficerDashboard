@@ -6,68 +6,38 @@
   <title>TacMap – Patrol Log</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
-    html, body {
-      margin: 0; padding: 0; height: 100%;
-      background: #0c1b2a;
-      font-family: monospace;
-      color: #e0e0e0;
-      -ms-touch-action: manipulation;
-      touch-action: manipulation;
-    }
-    #map { height: 100%; width: 100%; z-index: 0; }
-    #address {
-      position: absolute; top: 0; left: 0; right: 0;
-      padding: 6px 10px; font-size: 12px;
-      background: rgba(12, 27, 42, 0.9);
-      color: #00bfff; z-index: 999;
-      text-align: left; line-height: 1.4em;
-      max-height: 3.6em; overflow-y: auto;
-    }
-    #satBtn, #gpsBtn {
-      z-index: 999; background: #0c1b2a; color: #00bfff;
-      border: 1px solid #00bfff; padding: 5px 12px;
-      font-size: 12px; cursor: pointer;
-    }
-    #satBtn { position: absolute; top: 54px; left: 10px; }
-    #gpsBtn { position: absolute; top: 54px; right: 10px; }
-    #checkinBox {
-      position: absolute; top: 92px; left: 10px;
-      z-index: 999; background: rgba(12, 27, 42, 0.9);
-      padding: 8px; border: 2px solid #00bfff;
-      max-width: 240px; font-size: 11px;
-    }
-    #checkinBox div, #checkinBox input {
-      margin-bottom: 4px;
-    }
-    #checkinBox input[type="text"], #checkinBox input[type="file"] {
-      width: 95%; background: #0c1b2a; color: #e0e0e0;
-      border: 1px solid #00bfff; font-size: 11px; padding: 3px;
-    }
-    #viewLog, #resetLog, #exportLog, .editNoteBtn {
-      background: #0c1b2a; color: #00bfff;
-      border: 1px solid #00bfff; padding: 3px 6px;
-      font-size: 11px; cursor: pointer; margin-top: 4px;
-    }
-    #logData {
-      color: #ffcc00; font-size: 10px;
-      margin-top: 4px; max-height: 150px; overflow-y: auto;
-    }
-    .hud {
-      position: absolute; bottom: 0; width: 100%;
-      background: rgba(12, 27, 42, 0.95);
-      padding: 6px 8px; box-sizing: border-box;
-      display: flex; justify-content: space-between;
-      align-items: center; z-index: 999;
-      flex-wrap: wrap; font-size: 12px;
-    }
-    .hud span, .hud button {
-      margin: 2px 6px;
-    }
-    .hud button {
-      background: #0c1b2a; color: #00bfff;
-      border: 1px solid #00bfff; padding: 5px 12px;
-      font-size: 12px; cursor: pointer;
-    }
+    html, body { margin:0; padding:0; height:100%; background:#0c1b2a; font-family:monospace; color:#e0e0e0; -ms-touch-action:manipulation; touch-action:manipulation; }
+    #map { height:100%; width:100%; z-index:0; }
+
+    /* --- Top address bar --- */
+    #address{position:absolute;top:0;left:0;right:0;padding:6px 10px;font-size:12px;background:rgba(12,27,42,.9);color:#00bfff;z-index:999;line-height:1.4em;max-height:3.6em;overflow-y:auto;text-align:left}
+
+    /* --- View‑toggle + GPS jump --- */
+    #satBtn,#gpsBtn{z-index:999;background:#0c1b2a;color:#00bfff;border:1px solid #00bfff;padding:5px 12px;font-size:12px;cursor:pointer}
+    #satBtn{position:absolute;top:54px;left:10px}
+    #gpsBtn{position:absolute;top:54px;right:10px}
+
+    /* --- Check‑in box --- */
+    #checkinBox{position:absolute;top:92px;left:10px;z-index:999;background:rgba(12,27,42,.9);padding:8px;border:2px solid #00bfff;max-width:240px;font-size:11px}
+    #checkinBox div,#checkinBox input{margin-bottom:4px}
+    #checkinBox input[type="text"],#checkinBox input[type="file"]{width:95%;background:#0c1b2a;color:#e0e0e0;border:1px solid #00bfff;font-size:11px;padding:3px}
+
+    #viewLog,#resetLog,#exportLog,.editNoteBtn{background:#0c1b2a;color:#00bfff;border:1px solid #00bfff;padding:3px 6px;font-size:11px;cursor:pointer;margin-top:4px}
+    #logData{color:#ffcc00;font-size:10px;margin-top:4px;max-height:150px;overflow-y:auto}
+
+    /* --- Bottom HUD --- */
+    .hud{position:absolute;bottom:0;width:100%;background:rgba(12,27,42,.95);padding:6px 8px;box-sizing:border-box;display:flex;justify-content:space-between;align-items:center;z-index:999;flex-wrap:wrap;font-size:12px}
+    .hud span,.hud button{margin:2px 6px}
+    .hud button{background:#0c1b2a;color:#00bfff;border:1px solid #00bfff;padding:5px 12px;font-size:12px;cursor:pointer}
+
+    /* --- Modals (unchanged) --- */
+    #noteModal{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.95);z-index:2000;color:#00bfff;font-size:12px;text-align:center;padding-top:100px}
+    #noteModal textarea{width:80%;height:100px;background:#0c1b2a;border:1px solid #00bfff;color:#e0e0e0;padding:8px;font-family:monospace;margin-bottom:12px}
+    #noteModal button{margin:0 6px;background:#0c1b2a;color:#00bfff;border:1px solid #00bfff;padding:6px 12px}
+
+    #reminderModal{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.9);z-index:3000;justify-content:center;align-items:center;color:#ffcc00;font-size:13px;font-family:monospace;text-align:center;padding:20px}
+    .reminderContent{background:#0c1b2a;border:2px solid #ffcc00;padding:20px 30px;max-width:320px;box-shadow:0 0 10px #ffcc00}
+    .reminderContent button{margin:5px;background:#0c1b2a;color:#ffcc00;border:1px solid #ffcc00;padding:6px 12px;font-family:monospace;font-size:12px;cursor:pointer}
   </style>
 </head>
 <body>
@@ -79,11 +49,15 @@
   <div id="checkinBox">
     <div><label>Officer:</label><input type="text" id="officerName" placeholder="Enter name"></div>
     <div><label>Location:</label><input type="text" id="postLocation" placeholder="Enter post address"></div>
+    <!-- Multi‑image upload -->
     <div><label>Upload Photo(s):</label><input type="file" id="checkinImage" accept="image/*" multiple></div>
-    <div><strong>CHECK-INS:</strong> <span id="checkCount">0</span> | <strong>LAST:</strong> <span id="lastTime">--:--:--</span></div>
+
+    <div><strong>CHECK‑INS:</strong> <span id="checkCount">0</span> | <strong>LAST:</strong> <span id="lastTime">--:--:--</span></div>
     <div><strong>MOVE:</strong> <span id="stepCount">0</span> steps | <strong>DISTANCE:</strong> <span id="distCount">0</span>m</div>
+
     <button id="viewLog">[VIEW LOG]</button>
     <button id="exportLog">[EXPORT LOG]</button>
+
     <div id="logSection" style="display:none;">
       <div>LOG:</div>
       <div id="logData"></div>
@@ -91,11 +65,156 @@
     </div>
   </div>
 
+  <!-- Note editor modal -->
+  <div id="noteModal">
+    <div><strong>Edit Patrol Note</strong></div>
+    <textarea id="noteInput" placeholder="Enter note here..."></textarea><br>
+    <button onclick="clearNote()">[CLEAR NOTE]</button>
+    <button onclick="saveNote()">[SAVE]</button>
+    <button onclick="cancelNote()">[CANCEL]</button>
+  </div>
+
+  <!-- Reminder modal (local‑storage warning) -->
+  <div id="reminderModal">
+    <div class="reminderContent">
+      <strong>REMINDER:</strong><br>
+      This system relies on local storage.<br>
+      <u>Do not clear your browsing history</u><br>
+      or your patrol data will be lost.<br><br>
+      <label>How often should this message appear?</label><br><br>
+      <button onclick="setReminderPref('always')">[ALWAYS]</button>
+      <button onclick="setReminderPref('once')">[ONCE]</button>
+    </div>
+  </div>
+
+  <!-- Bottom HUD -->
   <div class="hud">
     <span id="gpsStatus">GPS: WAITING...</span>
     <span id="clock">TIME: --:--:--</span>
     <button onclick="clearMarkers()">[CLEAR MARKERS]</button>
-    <button onclick="doCheckIn()">[CHECK-IN]</button>
+    <button onclick="doCheckIn()">[CHECK‑IN]</button>
   </div>
+
+  <!-- MAP + PDF libraries -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script>
+    /* === Map initialisation === */
+    const map = L.map('map').setView([33.4484,-112.0740],20);
+    const street = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png');
+    const satellite = L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}',{subdomains:['mt0','mt1','mt2','mt3'],maxZoom:20});
+    let currentLayer = street; street.addTo(map);
+
+    /* === Runtime state === */
+    let trail=[], markers=[], steps=0,totalDist=0;
+    let checkIns=0, checkLog=[], checkNotes=[], checkImages=[];
+    let lastLatLng=null, roundStartTime=null, currentNoteIndex=null;
+
+    /* === UI references === */
+    const imageInput = document.getElementById('checkinImage');
+
+    /* === Utility === */
+    const R = 6371e3; // Earth radius (m)
+    function calcDistance(a,b){const dLat=(b.lat-a.lat)*Math.PI/180,dLon=(b.lng-a.lng)*Math.PI/180;const h=Math.sin(dLat/2)**2+Math.cos(a.lat*Math.PI/180)*Math.cos(b.lat*Math.PI/180)*Math.sin(dLon/2)**2;return Math.round(R*2*Math.atan2(Math.sqrt(h),Math.sqrt(1-h)));}
+    function getElapsed(start,end){const s=Math.floor((end-start)/1000);const h=String(Math.floor(s/3600)).padStart(2,'0');const m=String(Math.floor((s%3600)/60)).padStart(2,'0');const sec=String(s%60).padStart(2,'0');return `${h}:${m}:${sec}`;}
+
+    /* === Local‑storage helpers === */
+    function saveData(){localStorage.setItem('tacMapData',JSON.stringify({steps,totalDist,checkIns,checkLog,checkNotes,checkImages,trail,lastTime:document.getElementById('lastTime').textContent,officer:document.getElementById('officerName').value,location:document.getElementById('postLocation').value}));}
+
+    /* === Load persisted === */
+    window.onload=()=>{
+      const pref=localStorage.getItem('reminderPref');
+      if(!pref||pref==='always'){document.getElementById('reminderModal').style.display='flex';}
+      else if(pref==='once'&&!localStorage.getItem('reminderShownOnce')){document.getElementById('reminderModal').style.display='flex';}
+
+      const saved=localStorage.getItem('tacMapData');
+      if(saved){const p=JSON.parse(saved);
+        steps=p.steps||0;totalDist=p.totalDist||0;checkIns=p.checkIns||0;checkLog=p.checkLog||[];checkNotes=p.checkNotes||[];checkImages=p.checkImages||[];trail=p.trail||[];
+        document.getElementById('stepCount').textContent=steps;
+        document.getElementById('distCount').textContent=totalDist;
+        document.getElementById('checkCount').textContent=checkIns;
+        document.getElementById('lastTime').textContent=p.lastTime||'--:--:--';
+        document.getElementById('officerName').value=p.officer||'';
+        document.getElementById('postLocation').value=p.location||'';
+        updateLog();
+        trail.forEach(pt=>{const m=L.circleMarker(pt,{radius:2,color:'#00bfff',fillColor:'#00bfff',fillOpacity:1}).addTo(map);markers.push(m);});
+      }
+    };
+
+    /* === Reminder preference === */
+    function setReminderPref(x){localStorage.setItem('reminderPref',x);if(x==='once')localStorage.setItem('reminderShownOnce','yes');document.getElementById('reminderModal').style.display='none';}
+
+    /* === Log display === */
+    function updateLog(){document.getElementById('logData').innerHTML=checkLog.map((l,i)=>{const note=checkNotes[i]||'--';return `<div>${l}<br>Note: ${note}<br><button class='editNoteBtn' onclick='editNote(${i})'>[EDIT NOTE]</button></div><br>`;}).join('');}
+
+    /* === Note modal === */
+    function editNote(i){currentNoteIndex=i;document.getElementById('noteInput').value=checkNotes[i]||'';document.getElementById('noteModal').style.display='block';}
+    function saveNote(){const t=document.getElementById('noteInput').value.trim();if(currentNoteIndex!==null){checkNotes[currentNoteIndex]=t;updateLog();saveData();cancelNote();}}
+    function clearNote(){if(currentNoteIndex!==null){checkNotes[currentNoteIndex]='';updateLog();saveData();cancelNote();}}
+    function cancelNote(){currentNoteIndex=null;document.getElementById('noteModal').style.display='none';}
+
+    /* === Clock === */
+    function updateClock(){document.getElementById('clock').textContent='TIME: '+new Date().toLocaleString();}setInterval(updateClock,1000);
+
+    /* === Map layer toggle === */
+    document.getElementById('satBtn').onclick=()=>{map.removeLayer(currentLayer);currentLayer=currentLayer===street?satellite:street;currentLayer.addTo(map);document.getElementById('satBtn').textContent=currentLayer===street?'SATELLITE VIEW':'MAP VIEW';};
+
+    /* === HUD stats === */
+    function updStats(){document.getElementById('stepCount').textContent=steps;document.getElementById('distCount').textContent=totalDist;}
+
+    /* === Clear markers === */
+    function clearMarkers(){markers.forEach(m=>map.removeLayer(m));markers=[];trail=[];steps=0;totalDist=0;roundStartTime=null;updStats();saveData();}
+
+    /* === Geolocation tracker === */
+    navigator.geolocation.watchPosition(pos=>{
+      const {latitude,longitude,accuracy}=pos.coords;if(accuracy>30)return;
+      document.getElementById('gpsStatus').textContent=`GPS: LOCKED (${Math.round(accuracy)}m)`;
+      const latlng={lat:latitude,lng:longitude};lastLatLng=latlng;
+
+      if(trail.length){const last=trail[trail.length-1];const d=calcDistance(last,latlng);if(d>=1){steps++;totalDist+=d;updStats();if(!roundStartTime)roundStartTime=new Date();const mk=L.circleMarker(latlng,{radius:2,color:'#00bfff',fillColor:'#00bfff',fillOpacity:1}).addTo(map);markers.push(mk);trail.push(latlng);saveData();}}
+      else{map.setView(latlng,20,{animate:true});trail.push(latlng);saveData();}
+
+      fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}`).then(r=>r.json()).then(d=>{if(d.display_name)document.getElementById('address').textContent=d.display_name;}).catch(()=>{document.getElementById('address').textContent=`Lat:${latitude.toFixed(5)}, Lon:${longitude.toFixed(5)}`;});
+    },()=>{document.getElementById('gpsStatus').textContent='GPS: ERROR';},{enableHighAccuracy:true,maximumAge:0,timeout:5000});
+
+    /* === Sat / GPS buttons === */
+    document.getElementById('gpsBtn').onclick=()=>{if(lastLatLng)map.setView(lastLatLng,20,{animate:true});};
+
+    /* === Check‑in === */
+    function doCheckIn(){
+      const now=new Date();const t=now.toLocaleTimeString();const activeTime=roundStartTime?getElapsed(roundStartTime,now):'--:--:--';const entryNum=(checkIns+1).toString().padStart(2,'0');
+      const entry=`${entryNum} – ${t}<br>Steps: ${steps} | Distance: ${totalDist}m | Time: ${activeTime}`;
+      checkIns++;document.getElementById('checkCount').textContent=checkIns;document.getElementById('lastTime').textContent=t;checkLog.push(entry);checkNotes.push('');
+
+      /* --- Handle multi‑image upload --- */
+      const imgArray=[];
+      if(imageInput.files.length){
+        let loaded=0;[...imageInput.files].forEach(f=>{const reader=new FileReader();reader.onload=e=>{imgArray.push(e.target.result);loaded++;if(loaded===imageInput.files.length){checkImages.push(imgArray);afterCI();};};reader.readAsDataURL(f);});
+      }else{checkImages.push([]);afterCI();}
+      function afterCI(){updateLog();saveData();imageInput.value='';}
+    }
+
+    /* === Log view + reset buttons === */
+    document.getElementById('viewLog').onclick=()=>{const s=document.getElementById('logSection');s.style.display=s.style.display==='none'?'block':'none';};
+    document.getElementById('resetLog').onclick=()=>{checkIns=0;checkLog=[];checkNotes=[];checkImages=[];roundStartTime=null;document.getElementById('checkCount').textContent=0;document.getElementById('lastTime').textContent='--:--:--';document.getElementById('logData').innerHTML='';saveData();};
+
+    /* === PDF export with all images === */
+    document.getElementById('exportLog').onclick=()=>{
+      const {jsPDF}=window.jspdf;const doc=new jsPDF();let y=10;doc.setFont('Courier','normal');doc.setFontSize(11);
+      doc.text('PATROL LOG',10,y);y+=8;
+      const officer=document.getElementById('officerName').value||'--';const loc=document.getElementById('postLocation').value||'--';doc.text(`Officer: ${officer}`,10,y);y+=6;doc.text(`Location: ${loc}`,10,y);y+=8;
+
+      for(let i=0;i<checkLog.length;i++){
+        const txt=checkLog[i].replace(/<br>/g,'\n');const note=checkNotes[i]?`Note: ${checkNotes[i]}`:'Note: --';const block=doc.splitTextToSize(`${txt}\n${note}`,180);
+        if(y+block.length*6>250){doc.addPage();y=10;}
+        doc.text(block,10,y);y+=block.length*6;
+        if(checkImages[i]&&checkImages[i].length){for(const img of checkImages[i]){if(y+50>280){doc.addPage();y=10;}doc.addImage(img,'JPEG',10,y,60,45);y+=50;}}
+      }
+      doc.save('Patrol_Log.pdf');
+    };
+
+    /* === Prevent double‑tap zoom on buttons === */
+    document.querySelectorAll('button').forEach(btn=>{btn.addEventListener('touchstart',e=>{if(e.touches.length>1)e.preventDefault();},{passive:false});});document.addEventListener('gesturestart',e=>e.preventDefault());
+  </script>
 </body>
 </html>
