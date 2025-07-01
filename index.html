@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>CAD System Login</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    html, body {
+      margin: 0; padding: 0;
+      height: 100%;
+      background-color: #0a0f1c;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: #00ffff;
+    }
+
+    .login-container {
+      background-color: #101c30;
+      border: 2px solid #00ffff;
+      box-shadow: 0 0 10px #00ffff88;
+      padding: 30px;
+      border-radius: 10px;
+      width: 90%;
+      max-width: 400px;
+    }
+
+    h2 {
+      text-align: center;
+      margin-bottom: 30px;
+      font-size: 24px;
+      letter-spacing: 2px;
+      color: #00ffff;
+    }
+
+    label {
+      display: block;
+      margin-top: 15px;
+      font-weight: bold;
+    }
+
+    input {
+      width: 100%;
+      padding: 10px;
+      background-color: #0a1b2f;
+      border: 1px solid #00ffff88;
+      color: #00ffff;
+      border-radius: 5px;
+      font-size: 14px;
+      margin-top: 5px;
+      outline: none;
+      transition: box-shadow 0.3s ease;
+    }
+
+    input:focus {
+      box-shadow: 0 0 8px #00ffffcc;
+    }
+
+    button {
+      margin-top: 25px;
+      width: 100%;
+      padding: 12px;
+      background-color: #00ffff;
+      color: #0a0f1c;
+      border: none;
+      border-radius: 5px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: transform 0.1s ease-in-out;
+    }
+
+    button:active {
+      transform: scale(0.97);
+    }
+
+    #error {
+      margin-top: 15px;
+      color: #ff4d4d;
+      font-size: 13px;
+      text-align: center;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="login-container">
+    <h2>OFFICER LOGIN</h2>
+    <label for="username">Username</label>
+    <input type="text" id="username" autocomplete="username">
+
+    <label for="password">Password</label>
+    <input type="password" id="password" autocomplete="current-password">
+
+    <button onclick="attemptLogin()">ENTER SYSTEM</button>
+    <div id="error">Invalid username or password</div>
+  </div>
+
+  <script>
+    let officerList = [];
+
+    fetch('officers.json')
+      .then(res => res.json())
+      .then(data => { officerList = data; })
+      .catch(() => {
+        document.getElementById('error').textContent = "Error loading officers list.";
+        document.getElementById('error').style.display = "block";
+      });
+
+    function attemptLogin() {
+      const u = document.getElementById('username').value.trim().toLowerCase();
+      const p = document.getElementById('password').value;
+      const match = officerList.find(o => o.username.toLowerCase() === u && o.password === p);
+
+      if (match) {
+        localStorage.setItem('officerName', match.name);
+        window.location.href = 'dashboard.html';
+      } else {
+        document.getElementById('error').textContent = "Invalid username or password";
+        document.getElementById('error').style.display = "block";
+      }
+    }
+  </script>
+</body>
+</html>

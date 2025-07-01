@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>TacMap – Patrol Log</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    html, body {
+      margin: 0; padding: 0; height: 100%;
+      background: #0c1b2a; /* Dark navy - law enforcement CAD */
+      font-family: monospace;
+      color: #e0e0e0; /* Light gray text */
+      -ms-touch-action: manipulation;
+      touch-action: manipulation;
+    }
+
+    #map { height: 100%; width: 100%; z-index: 0; }
+
+    #address {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      padding: 6px 10px;
+      font-size: 12px;
+      background: rgba(12, 27, 42, 0.9);
+      color: #00bfff; /* CAD blue for address text */
+      z-index: 999;
+      text-align: left;
+      line-height: 1.4em;
+      max-height: 3.6em;
+      overflow-y: auto;
+    }
+
+    #satBtn, #gpsBtn {
+      z-index: 999;
+      background: #0c1b2a;
+      color: #00bfff;
+      border: 1px solid #00bfff;
+      padding: 5px 12px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    #satBtn { position: absolute; top: 54px; left: 10px; }
+    #gpsBtn { position: absolute; top: 54px; right: 10px; }
+
+    #checkinBox {
+      position: absolute;
+      top: 92px;
+      left: 10px;
+      z-index: 999;
+      background: rgba(12, 27, 42, 0.9);
+      padding: 8px;
+      border: 2px solid #00bfff;
+      max-width: 240px; /* reduced size */
+      font-size: 11px;
+    }
+    #checkinBox div, #checkinBox input {
+      margin-bottom: 4px;
+    }
+
+    #checkinBox input {
+      width: 95%;
+      background: #0c1b2a;
+      color: #e0e0e0;
+      border: 1px solid #00bfff;
+      font-size: 11px;
+      padding: 3px;
+    }
+
+    #viewLog, #resetLog, #exportLog, .editNoteBtn {
+      background: #0c1b2a;
+      color: #00bfff;
+      border: 1px solid #00bfff;
+      padding: 3px 6px;
+      font-size: 11px;
+      cursor: pointer;
+      margin-top: 4px;
+    }
+
+    #logData {
+      color: #ffcc00; /* amber logs */
+      font-size: 10px;
+      margin-top: 4px;
+      max-height: 150px;
+      overflow-y: auto;
+    }
+
+    .hud {
+      position: absolute;
+      bottom: 0;
+      width: 100%;
+      background: rgba(12, 27, 42, 0.95);
+      padding: 6px 8px;
+      box-sizing: border-box;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 999;
+      flex-wrap: wrap;
+      font-size: 12px;
+    }
+
+    .hud span, .hud button {
+      margin: 2px 6px;
+    }
+
+    .hud button {
+      background: #0c1b2a;
+      color: #00bfff;
+      border: 1px solid #00bfff;
+      padding: 5px 12px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    #noteModal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.95);
+      z-index: 2000;
+      color: #00bfff;
+      font-size: 12px;
+      text-align: center;
+      padding-top: 100px;
+    }
+    #noteModal textarea {
+      width: 80%;
+      height: 100px;
+      background: #0c1b2a;
+      border: 1px solid #00bfff;
+      color: #e0e0e0;
+      padding: 8px;
+      font-family: monospace;
+      margin-bottom: 12px;
+    }
+
+    #noteModal button {
+      margin: 0 6px;
+      background: #0c1b2a;
+      color: #00bfff;
+      border: 1px solid #00bfff;
+      padding: 6px 12px;
+    }
+
+    #reminderModal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.9);
+      z-index: 3000;
+      justify-content: center;
+      align-items: center;
+      color: #ffcc00;
+      font-size: 13px;
+      font-family: monospace;
+      text-align: center;
+      padding: 20px;
+    }
+
+    .reminderContent {
+      background: #0c1b2a;
+      border: 2px solid #ffcc00;
+      padding: 20px 30px;
+      max-width: 320px;
+      box-shadow: 0 0 10px #ffcc00;
+    }
+
+    .reminderContent button {
+      margin: 5px;
+      background: #0c1b2a;
+      color: #ffcc00;
+      border: 1px solid #ffcc00;
+      padding: 6px 12px;
+      font-family: monospace;
+      font-size: 12px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+  <div id="address">LOCATING...</div>
+  <button id="satBtn">SATELLITE VIEW</button>
+  <button id="gpsBtn">[GPS]</button>
+
+  <div id="checkinBox">
+    <!-- OFFICER INFO FIELDS -->
+    <div><label>Officer:</label><input type="text" id="officerName" placeholder="Enter name"></div>
+    <div><label>Location:</label><input type="text" id="postLocation" placeholder="Enter post address"></div>
+    <!-- CHECK-IN SUMMARY -->
+    <div><strong>CHECK-INS:</strong> <span id="checkCount">0</span> | <strong>LAST:</strong> <span id="lastTime">--:--:--</span></div>
+    <div><strong>MOVE:</strong> <span id="stepCount">0</span> steps | <strong>DISTANCE:</strong> <span id="distCount">0</span>m</div>
+
+    <!-- LOG BUTTONS -->
+    <button id="viewLog">[VIEW LOG]</button>
+    <button id="exportLog">[EXPORT LOG]</button>
+
+    <!-- LOG SECTION -->
+    <div id="logSection" style="display:none;">
+      <div>LOG:</div>
+      <div id="logData"></div>
+      <button id="resetLog">[RESET LOG]</button>
+    </div>
+  </div>
+
+  <!-- MODAL: NOTE EDITOR -->
+  <div id="noteModal">
+    <div><strong>Edit Patrol Note</strong></div>
+    <textarea id="noteInput" placeholder="Enter note here..."></textarea><br>
+    <button onclick="clearNote()">[CLEAR NOTE]</button>
+    <button onclick="saveNote()">[SAVE]</button>
+    <button onclick="cancelNote()">[CANCEL]</button>
+  </div>
+
+  <!-- REMINDER MODAL -->
+  <div id="reminderModal">
+    <div class="reminderContent">
+      <strong>REMINDER:</strong><br>
+      This system relies on local storage.<br>
+      <u>Do not clear your browsing history</u><br>
+      or your patrol data will be lost.<br><br>
+      <label>How often should this message appear?</label><br><br>
+      <button onclick="setReminderPref('always')">[ALWAYS]</button>
+      <button onclick="setReminderPref('once')">[ONCE]</button>
+    </div>
+  </div>
+  <!-- BOTTOM HUD -->
+  <div class="hud">
+    <span id="gpsStatus">GPS: WAITING...</span>
+    <span id="clock">TIME: --:--:--</span>
+    <button onclick="clearMarkers()">[CLEAR MARKERS]</button>
+    <button onclick="doCheckIn()">[CHECK-IN]</button>
+  </div>
+
+  <!-- MAP + PDF LIBRARIES -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script>
+    let map = L.map('map').setView([33.4484, -112.0740], 20);
+    let street = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png');
+    let satellite = L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
+      subdomains: ['mt0','mt1','mt2','mt3'], maxZoom: 20
+    });
+    let currentLayer = street;
+    street.addTo(map);
+
+    let trail = [], markers = [], steps = 0, totalDist = 0;
+    let checkIns = 0, checkLog = [], checkNotes = [];
+    let lastLatLng = null;
+    let roundStartTime = null;
+    let currentNoteIndex = null;
+
+    // GPS BUTTON FUNCTION
+    document.getElementById('gpsBtn').onclick = () => {
+      if (lastLatLng) map.setView(lastLatLng, 20, { animate: true });
+    };
+    // REMINDER MODAL SYSTEM
+    window.onload = () => {
+      const pref = localStorage.getItem('reminderPref');
+      if (!pref || pref === 'always') {
+        document.getElementById('reminderModal').style.display = 'flex';
+      } else if (pref === 'once' && !localStorage.getItem('reminderShownOnce')) {
+        document.getElementById('reminderModal').style.display = 'flex';
+      }
+
+      const saved = localStorage.getItem("tacMapData");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        steps = parsed.steps || 0;
+        totalDist = parsed.totalDist || 0;
+        checkIns = parsed.checkIns || 0;
+        checkLog = parsed.checkLog || [];
+        checkNotes = parsed.checkNotes || [];
+        trail = parsed.trail || [];
+
+        document.getElementById('stepCount').textContent = steps;
+        document.getElementById('distCount').textContent = totalDist;
+        document.getElementById('checkCount').textContent = checkIns;
+        document.getElementById('lastTime').textContent = parsed.lastTime || "--:--:--";
+        document.getElementById('officerName').value = parsed.officer || '';
+        document.getElementById('postLocation').value = parsed.location || '';
+
+        updateLog();
+
+        for (let p of trail) {
+          const mark = L.circleMarker(p, {
+            radius: 2, color: '#00bfff', fillColor: '#00bfff', fillOpacity: 1
+          }).addTo(map);
+          markers.push(mark);
+        }
+      }
+    };
+
+    function setReminderPref(pref) {
+      localStorage.setItem('reminderPref', pref);
+      if (pref === 'once') localStorage.setItem('reminderShownOnce', 'yes');
+      document.getElementById('reminderModal').style.display = 'none';
+    }
+
+    function saveData() {
+      localStorage.setItem("tacMapData", JSON.stringify({
+        steps,
+        totalDist,
+        checkIns,
+        checkLog,
+        checkNotes,
+        trail,
+        lastTime: document.getElementById('lastTime').textContent,
+        officer: document.getElementById('officerName').value,
+        location: document.getElementById('postLocation').value
+      }));
+    }
+    function updateLog() {
+      const container = document.getElementById('logData');
+      container.innerHTML = checkLog.map((line, i) => {
+        const note = checkNotes[i] || '--';
+        return `<div>${line}<br>Note: ${note}<br><button class="editNoteBtn" onclick="editNote(${i})">[EDIT NOTE]</button></div><br>`;
+      }).join('');
+    }
+
+    function editNote(index) {
+      currentNoteIndex = index;
+      document.getElementById("noteInput").value = checkNotes[index] || '';
+      document.getElementById("noteModal").style.display = 'block';
+    }
+
+    function saveNote() {
+      const text = document.getElementById("noteInput").value.trim();
+      if (currentNoteIndex !== null) {
+        checkNotes[currentNoteIndex] = text;
+        updateLog();
+        saveData();
+        cancelNote();
+      }
+    }
+
+    function clearNote() {
+      if (currentNoteIndex !== null) {
+        checkNotes[currentNoteIndex] = '';
+        updateLog();
+        saveData();
+        cancelNote();
+      }
+    }
+
+    function cancelNote() {
+      currentNoteIndex = null;
+      document.getElementById("noteModal").style.display = 'none';
+    }
+
+    function getElapsedTime(start, end) {
+      const delta = Math.floor((end - start) / 1000);
+      const hrs = String(Math.floor(delta / 3600)).padStart(2, '0');
+      const min = String(Math.floor((delta % 3600) / 60)).padStart(2, '0');
+      const sec = String(delta % 60).padStart(2, '0');
+      return `${hrs}:${min}:${sec}`;
+    }
+    function updateClock() {
+      const now = new Date();
+      document.getElementById("clock").textContent = "TIME: " + now.toLocaleString();
+    }
+
+    setInterval(updateClock, 1000);
+
+    document.getElementById('satBtn').onclick = () => {
+      map.removeLayer(currentLayer);
+      currentLayer = currentLayer === street ? satellite : street;
+      currentLayer.addTo(map);
+      document.getElementById('satBtn').textContent = currentLayer === street ? "SATELLITE VIEW" : "MAP VIEW";
+    };
+
+    function updateStats() {
+      document.getElementById('stepCount').textContent = steps;
+      document.getElementById('distCount').textContent = totalDist;
+    }
+
+    function clearMarkers() {
+      markers.forEach(m => map.removeLayer(m));
+      markers = [];
+      trail = [];
+      steps = 0;
+      totalDist = 0;
+      roundStartTime = null;
+      updateStats();
+      saveData();
+    }
+
+    document.getElementById('viewLog').onclick = () => {
+      const section = document.getElementById('logSection');
+      section.style.display = section.style.display === 'none' ? 'block' : 'none';
+    };
+
+    document.getElementById('resetLog').onclick = () => {
+      checkIns = 0;
+      checkLog = [];
+      checkNotes = [];
+      roundStartTime = null;
+      document.getElementById('checkCount').textContent = 0;
+      document.getElementById('lastTime').textContent = '--:--:--';
+      document.getElementById('logData').innerHTML = '';
+      saveData();
+    };
+
+    function doCheckIn() {
+      const now = new Date();
+      const t = now.toLocaleTimeString();
+      let activeTime = "--:--:--";
+      if (roundStartTime) activeTime = getElapsedTime(roundStartTime, now);
+      const entryNum = (checkIns + 1).toString().padStart(2, '0');
+      const logEntry = `${entryNum} – ${t}<br>Steps: ${steps} | Distance: ${totalDist}m | Time: ${activeTime}`;
+      checkIns++;
+      document.getElementById('checkCount').textContent = checkIns;
+      document.getElementById('lastTime').textContent = t;
+      checkLog.push(logEntry);
+      checkNotes.push('');
+      updateLog();
+      saveData();
+    }
+    function calcDistance(latlng1, latlng2) {
+      const R = 6371e3;
+      const dLat = (latlng2.lat - latlng1.lat) * Math.PI / 180;
+      const dLon = (latlng2.lng - latlng1.lng) * Math.PI / 180;
+      const a = Math.sin(dLat / 2) ** 2 +
+                Math.cos(latlng1.lat * Math.PI / 180) *
+                Math.cos(latlng2.lat * Math.PI / 180) *
+                Math.sin(dLon / 2) ** 2;
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      return Math.round(R * c);
+    }
+
+    navigator.geolocation.watchPosition(pos => {
+      const { latitude, longitude, accuracy } = pos.coords;
+      if (accuracy > 30) return;
+
+      document.getElementById('gpsStatus').textContent = `GPS: LOCKED (${Math.round(accuracy)}m)`;
+      const latlng = { lat: latitude, lng: longitude };
+      lastLatLng = latlng;
+
+      if (trail.length > 0) {
+        const last = trail[trail.length - 1];
+        const dist = calcDistance(last, latlng);
+        if (dist >= 1) {
+          steps++;
+          totalDist += dist;
+          updateStats();
+          if (!roundStartTime) roundStartTime = new Date();
+          const mark = L.circleMarker(latlng, {
+            radius: 2, color: '#00bfff', fillColor: '#00bfff', fillOpacity: 1
+          }).addTo(map);
+          markers.push(mark);
+          trail.push(latlng);
+          saveData();
+        }
+      } else {
+        map.setView(latlng, 20, { animate: true });
+        trail.push(latlng);
+        saveData();
+      }
+
+      fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.display_name) {
+            document.getElementById('address').textContent = data.display_name;
+          }
+        })
+        .catch(() => {
+          document.getElementById('address').textContent = `Lat: ${latitude.toFixed(5)}, Lon: ${longitude.toFixed(5)}`;
+        });
+    }, () => {
+      document.getElementById('gpsStatus').textContent = "GPS: ERROR";
+    }, {
+      enableHighAccuracy: true,
+      maximumAge: 0,
+      timeout: 5000
+    });
+    // PDF EXPORT FUNCTION
+    document.getElementById('exportLog').onclick = () => {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      let y = 10;
+
+      doc.setFont("Courier", "normal");
+      doc.setFontSize(11);
+      doc.text("PATROL LOG", 10, y); y += 8;
+
+      const officer = document.getElementById("officerName").value || "--";
+      const location = document.getElementById("postLocation").value || "--";
+      doc.text(`Officer: ${officer}`, 10, y); y += 6;
+      doc.text(`Location: ${location}`, 10, y); y += 8;
+
+      for (let i = 0; i < checkLog.length; i++) {
+        const entry = checkLog[i].replace(/<br>/g, '\n');
+        const note = checkNotes[i] ? `Note: ${checkNotes[i]}` : "Note: --";
+        const lines = doc.splitTextToSize(entry + "\n" + note, 180);
+        if (y + lines.length * 6 > 280) {
+          doc.addPage(); y = 10;
+        }
+        doc.text(lines, 10, y); y += lines.length * 6;
+      }
+
+      doc.save("Patrol_Log.pdf");
+    };
+
+    // DISABLE ZOOM FROM DOUBLE TAP
+    document.querySelectorAll("button").forEach(btn => {
+      btn.addEventListener("touchstart", e => {
+        if (e.touches.length > 1) e.preventDefault();
+      }, { passive: false });
+    });
+
+    document.addEventListener("gesturestart", e => e.preventDefault());
+  </script>
+</body>
+</html>

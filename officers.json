@@ -1,0 +1,17 @@
+[
+  {
+    "username": "jramos",
+    "password": "secure123",
+    "name": "John Ramos"
+  },
+  {
+    "username": "tsanders",
+    "password": "ops421",
+    "name": "Tina Sanders"
+  },
+  {
+    "username": "apuente",
+    "password": "vtx999",
+    "name": "Timoteo Puente"
+  }
+]

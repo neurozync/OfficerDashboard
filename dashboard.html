@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>OFFICER DASHBOARD</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      font-family: Arial, sans-serif;
+      background-color: #0c1b2a;
+      color: #e0e0e0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    header {
+      width: 100%;
+      padding: 10px 20px;
+      background-color: #162c3c;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 0 10px rgba(0, 191, 255, 0.2);
+    }
+
+    #officerName {
+      font-size: 16px;
+      color: #00bfff;
+      font-weight: bold;
+    }
+
+    #clock {
+      font-size: 14px;
+      color: #aaa;
+    }
+
+    h1 {
+      margin: 40px 0 30px 0;
+      color: #00bfff;
+      font-size: 26px;
+      text-shadow: 0 0 5px #00bfff;
+    }
+
+    .button-wrapper {
+      display: flex;
+      gap: 60px;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-bottom: 30px;
+    }
+
+    .dashboard-button {
+      width: 220px;
+      height: 100px;
+      background-color: #162c3c;
+      border: 2px solid #00bfff;
+      color: #00bfff;
+      font-size: 20px;
+      font-weight: bold;
+      text-align: center;
+      line-height: 100px;
+      text-decoration: none;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0, 191, 255, 0.2);
+      transition: all 0.25s ease;
+    }
+
+    .dashboard-button:hover {
+      background-color: #00bfff;
+      color: #0c1b2a;
+      box-shadow: 0 0 15px #00bfff;
+    }
+
+    #logoutBtn {
+      position: absolute;
+      top: 10px;
+      right: 20px;
+      background-color: transparent;
+      border: 1px solid #00bfff;
+      color: #00bfff;
+      padding: 5px 12px;
+      cursor: pointer;
+      font-size: 13px;
+      border-radius: 4px;
+    }
+
+    #logoutBtn:hover {
+      background-color: #00bfff;
+      color: #0c1b2a;
+    }
+
+    footer {
+      position: absolute;
+      bottom: 15px;
+      font-size: 11px;
+      color: #444;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div id="officerName">Officer: --</div>
+    <div id="clock">--:--:--</div>
+  </header>
+
+  <h1>ACCESS PORTAL</h1>
+
+  <div class="button-wrapper">
+    <a href="GPSmap.html" class="dashboard-button">GPS MAP</a>
+    <a href="SOreport.html" class="dashboard-button">REPORT FORM</a>
+  </div>
+
+  <button id="logoutBtn" onclick="logout()">Logout</button>
+  <footer>Vertex Protection Systems • CAD Interface</footer>
+
+  <script>
+    // Access restriction: check login
+    const name = localStorage.getItem("officerName");
+    if (!name) {
+      window.location.href = "login.html";
+    } else {
+      document.getElementById("officerName").textContent = "Officer: " + name;
+    }
+
+    // Live clock
+    function updateClock() {
+      const now = new Date();
+      document.getElementById("clock").textContent = now.toLocaleTimeString();
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    // Logout
+    function logout() {
+      localStorage.removeItem("officerName");
+      window.location.href = "login.html";
+    }
+  </script>
+</body>
+</html>
